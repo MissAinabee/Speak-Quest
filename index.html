@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpeakQuest AI - Teen Speaking Prompter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 3s ease-in-out infinite',
+            'ripple': 'ripple 1.5s cubic-bezier(0, 0.2, 0.8, 1) infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-8px)' },
+            },
+            ripple: {
+              '0%': { transform: 'scale(0.8)', opacity: '1' },
+              '100%': { transform: 'scale(1.8)', opacity: '0' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.4); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.7); }
+    
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.2);
+    }
+  </style>
+</head>
+<body class="h-full font-sans antialiased text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
+
+  <!-- Top Navigation -->
+  <header class="border-b border-slate-800 bg-slate-950/80 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid font-bold text-white text-xl fa-comments"></i>
+        </div>
+        <div>
+          <span class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">SpeakQuest</span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 ml-2">Teen Speaking Hub</span>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <button id="resetSessionBtn" class="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-1.5">
+          <i class="fa-solid fa-rotate-right"></i> Start Fresh
+        </button>
+        <div class="h-4 w-[1px] bg-slate-800"></div>
+        <div class="flex items-center gap-2 text-xs text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>Mic Ready</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
+
+    <!-- SECTION 1: Character & Mode Selection -->
+    <section id="selectionSection" class="space-y-6">
+      <div class="text-center max-w-2xl mx-auto space-y-2">
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+          Pick Your AI Speaking Buddy
+        </h1>
+        <p class="text-slate-400 text-sm sm:text-base">
+          Choose a teen buddy, select your level and topic category. Speak your response and receive instant AI feedback!
+        </p>
+      </div>
+
+      <!-- Settings Controls Bar -->
+      <div class="glass-card rounded-2xl p-4 max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-4 w-full sm:w-auto">
+          
+          <!-- Level Selector (A1, A2, B1, B2) -->
+          <div class="flex flex-col gap-1 w-full sm:w-48">
+            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+              <i class="fa-solid fa-layer-group text-indigo-400"></i> Level
+            </label>
+            <select id="levelSelect" class="bg-slate-900 border border-slate-700 rounded-lg text-sm px-3 py-2 text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="A1 Beginner">A1 (Beginner)</option>
+              <option value="A2 Elementary">A2 (Elementary)</option>
+              <option value="B1 Intermediate" selected>B1 (Intermediate)</option>
+              <option value="B2 Upper-Intermediate">B2 (Upper-Intermediate)</option>
+            </select>
+          </div>
+
+          <!-- Topic Category Selector -->
+          <div class="flex flex-col gap-1 w-full sm:w-64">
+            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+              <i class="fa-solid fa-compass text-indigo-400"></i> Topic Category
+            </label>
+            <select id="topicSelect" class="bg-slate-900 border border-slate-700 rounded-lg text-sm px-3 py-2 text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="People and Culture">People and Culture</option>
+              <option value="Health and Environment">Health and Environment</option>
+              <option value="Science and Technology">Science and Technology</option>
+              <option value="Consumerism and Financial Awareness">Consumerism & Financial Awareness</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs text-slate-400 italic">
+          <i class="fa-solid fa-circle-info text-indigo-400"></i> Prompts adapt to your level & topic!
+        </div>
+      </div>
+
+      <!-- Characters Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 max-w-6xl mx-auto">
+        
+        <!-- Character 1: Leo -->
+        <div class="char-card glass-card glass-card-hover rounded-2xl p-5 cursor-pointer border-2 border-transparent transition-all relative flex flex-col justify-between group" data-char="leo">
+          <div class="space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-3xl mx-auto group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-laptop-code"></i>
+            </div>
+            <div class="text-center">
+              <h3 class="font-bold text-slate-100 group-hover:text-indigo-300">Leo</h3>
+              <p class="text-xs text-cyan-400 font-medium">Tech & Future Enthusiast</p>
+              <p class="text-xs text-slate-400 mt-2 line-clamp-2">Loves AI gadgets, gaming tech, futuristic science, and coding projects.</p>
+            </div>
+          </div>
+          <button class="mt-4 w-full py-2 bg-slate-800 hover:bg-indigo-600 hover:text-white text-xs font-semibold rounded-lg text-slate-300 transition-colors flex items-center justify-center gap-1">
+            <span>Talk with Leo</span> <i class="fa-solid fa-arrow-right text-[10px]"></i>
+          </button>
+        </div>
+
+        <!-- Character 2: Maya -->
+        <div class="char-card glass-card glass-card-hover rounded-2xl p-5 cursor-pointer border-2 border-transparent transition-all relative flex flex-col justify-between group" data-char="maya">
+          <div class="space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 text-3xl mx-auto group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-earth-americas"></i>
+            </div>
+            <div class="text-center">
+              <h3 class="font-bold text-slate-100 group-hover:text-indigo-300">Maya</h3>
+              <p class="text-xs text-rose-400 font-medium">Culture & Social Explorer</p>
+              <p class="text-xs text-slate-400 mt-2 line-clamp-2">Loves global festivals, traditions, teen lifestyle, music, and community stories.</p>
+            </div>
+          </div>
+          <button class="mt-4 w-full py-2 bg-slate-800 hover:bg-indigo-600 hover:text-white text-xs font-semibold rounded-lg text-slate-300 transition-colors flex items-center justify-center gap-1">
+            <span>Talk with Maya</span> <i class="fa-solid fa-arrow-right text-[10px]"></i>
+          </button>
+        </div>
+
+        <!-- Character 3: Zoe -->
+        <div class="char-card glass-card glass-card-hover rounded-2xl p-5 cursor-pointer border-2 border-transparent transition-all relative flex flex-col justify-between group" data-char="zoe">
+          <div class="space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-3xl mx-auto group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-leaf"></i>
+            </div>
+            <div class="text-center">
+              <h3 class="font-bold text-slate-100 group-hover:text-indigo-300">Zoe</h3>
+              <p class="text-xs text-emerald-400 font-medium">Eco & Health Champion</p>
+              <p class="text-xs text-slate-400 mt-2 line-clamp-2">Passionate about wellness, sports, healthy habits, and protecting planet Earth.</p>
+            </div>
+          </div>
+          <button class="mt-4 w-full py-2 bg-slate-800 hover:bg-indigo-600 hover:text-white text-xs font-semibold rounded-lg text-slate-300 transition-colors flex items-center justify-center gap-1">
+            <span>Talk with Zoe</span> <i class="fa-solid fa-arrow-right text-[10px]"></i>
+          </button>
+        </div>
+
+        <!-- Character 4: Sam -->
+        <div class="char-card glass-card glass-card-hover rounded-2xl p-5 cursor-pointer border-2 border-transparent transition-all relative flex flex-col justify-between group" data-char="sam">
+          <div class="space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 text-3xl mx-auto group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-wallet"></i>
+            </div>
+            <div class="text-center">
+              <h3 class="font-bold text-slate-100 group-hover:text-indigo-300">Sam</h3>
+              <p class="text-xs text-amber-400 font-medium">Smart Money Guru</p>
+              <p class="text-xs text-slate-400 mt-2 line-clamp-2">Sharp budgeter sharing tips on smart shopping, allowance management, and savings.</p>
+            </div>
+          </div>
+          <button class="mt-4 w-full py-2 bg-slate-800 hover:bg-indigo-600 hover:text-white text-xs font-semibold rounded-lg text-slate-300 transition-colors flex items-center justify-center gap-1">
+            <span>Talk with Sam</span> <i class="fa-solid fa-arrow-right text-[10px]"></i>
+          </button>
+        </div>
+
+        <!-- Character 5: Kai -->
+        <div class="char-card glass-card glass-card-hover rounded-2xl p-5 cursor-pointer border-2 border-transparent transition-all relative flex flex-col justify-between group" data-char="kai">
+          <div class="space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 text-3xl mx-auto group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div class="text-center">
+              <h3 class="font-bold text-slate-100 group-hover:text-indigo-300">Kai</h3>
+              <p class="text-xs text-purple-400 font-medium">Creative Life Coach</p>
+              <p class="text-xs text-slate-400 mt-2 line-clamp-2">High-energy motivator asking fun "what-if" choices and creative goal questions.</p>
+            </div>
+          </div>
+          <button class="mt-4 w-full py-2 bg-slate-800 hover:bg-indigo-600 hover:text-white text-xs font-semibold rounded-lg text-slate-300 transition-colors flex items-center justify-center gap-1">
+            <span>Talk with Kai</span> <i class="fa-solid fa-arrow-right text-[10px]"></i>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- SECTION 2: Practice & Recording Stage -->
+    <section id="promptPracticeSection" class="hidden space-y-6 max-w-4xl mx-auto w-full">
+      
+      <!-- Back / Control bar -->
+      <div class="flex items-center justify-between">
+        <button id="changeBuddyBtn" class="text-xs font-semibold text-slate-400 hover:text-indigo-400 transition-colors flex items-center gap-2">
+          <i class="fa-solid fa-chevron-left"></i> Switch Buddy or Topic
+        </button>
+        <div class="flex items-center gap-2">
+          <span id="activeLevelBadge" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-800 border border-slate-700 text-indigo-300"></span>
+          <span id="activeTopicBadge" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-800 border border-slate-700 text-slate-300"></span>
+        </div>
+      </div>
+
+      <!-- Active Character Question Display Card -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden border border-indigo-500/20 shadow-2xl">
+        <div class="absolute -top-24 -right-24 w-60 h-60 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          <!-- Avatar Icon Container -->
+          <div class="relative shrink-0">
+            <div id="activeAvatarBox" class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl flex items-center justify-center text-4xl sm:text-5xl shadow-xl transition-all animate-float">
+              <!-- Dynamic Icon Inserted via JS -->
+            </div>
+            <!-- Audio Waves indicator -->
+            <div id="characterSpeakingWave" class="hidden absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-indigo-600 px-2.5 py-1 rounded-full text-white text-[10px]">
+              <span class="w-1 h-3 bg-white animate-bounce"></span>
+              <span class="w-1 h-4 bg-white animate-bounce delay-100"></span>
+              <span class="w-1 h-2 bg-white animate-bounce delay-200"></span>
+              <span class="ml-1 font-bold">Speaking...</span>
+            </div>
+          </div>
+
+          <!-- Question Prompt Text & Controls -->
+          <div class="flex-1 space-y-4 text-center sm:text-left w-full">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 id="activeCharName" class="text-xl font-bold text-white">Character Name</h2>
+                <p id="activeCharRole" class="text-xs font-medium text-indigo-400">Persona Title</p>
+              </div>
+
+              <!-- Question Action Buttons -->
+              <div class="flex items-center gap-2">
+                <button id="toggleTextBtn" title="Hide or reveal question text for listening practice" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors flex items-center gap-1.5">
+                  <i id="toggleTextIcon" class="fa-solid fa-eye"></i> <span id="toggleTextLabel">Hide Text</span>
+                </button>
+                <button id="newQuestionBtn" title="Generate another question with this persona" class="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-medium transition-colors flex items-center gap-1.5">
+                  <i class="fa-solid fa-shuffle"></i> <span>New Question</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Question Text Box -->
+            <div id="questionContainer" class="bg-slate-900/90 rounded-2xl p-5 border border-slate-800 text-slate-100 text-lg sm:text-xl font-medium leading-relaxed min-h-[100px] flex items-center transition-all">
+              <div id="questionLoadingSpinner" class="hidden flex items-center gap-3 text-slate-400 text-base">
+                <i class="fa-solid fa-circle-notch fa-spin text-indigo-500 text-xl"></i>
+                <span>Thinking of a custom question for you...</span>
+              </div>
+              <p id="questionText" class="w-full"></p>
+              <div id="questionHiddenPlaceholder" class="hidden w-full text-center text-slate-500 italic text-base">
+                <i class="fa-solid fa-volume-high text-indigo-400 mr-2"></i> Question text hidden! Listen carefully to your buddy. Click "Play Voice" or "Show Text" anytime.
+              </div>
+            </div>
+
+            <!-- Speech Audio Controls -->
+            <div class="flex items-center justify-between pt-1">
+              <button id="playCharVoiceBtn" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2">
+                <i class="fa-solid fa-play"></i> <span>Play Buddy Voice (TTS)</span>
+              </button>
+
+              <div class="text-xs text-slate-400 flex items-center gap-2">
+                <span>Audio Engine:</span>
+                <span id="ttsEngineLabel" class="font-mono text-indigo-300 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/40">Gemini Neural Voice</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- SECTION 3: Student Voice Recording Module -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-slate-800">
+        
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-microphone-lines text-indigo-400"></i> Your Spoken Answer
+            </h3>
+            <p class="text-xs text-slate-400">Record your voice directly or type in your response.</p>
+          </div>
+
+          <!-- Timer & Status -->
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 bg-slate-900 px-4 py-2 rounded-xl border border-slate-800">
+              <i class="fa-regular fa-clock text-indigo-400"></i>
+              <span id="recordTimer" class="font-mono font-bold text-sm text-slate-200">00:00</span>
+              <span class="text-slate-600 text-xs">/ 02:00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audio Waveform Visualizer Canvas -->
+        <div class="relative w-full h-24 bg-slate-950/80 rounded-2xl border border-slate-800 overflow-hidden flex items-center justify-center">
+          <canvas id="visualizerCanvas" class="w-full h-full"></canvas>
+          <div id="visualizerPlaceholder" class="absolute text-xs text-slate-500 flex items-center gap-2 pointer-events-none">
+            <i class="fa-solid fa-wave-square text-slate-600"></i> Click "Start Recording" when ready to speak
+          </div>
+        </div>
+
+        <!-- Recording Controls -->
+        <div class="flex flex-wrap items-center justify-center gap-4 pt-2">
+          
+          <button id="recordBtn" class="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-2xl shadow-lg shadow-red-600/30 transition-all flex items-center gap-2 group">
+            <span class="w-3 h-3 rounded-full bg-white group-hover:scale-110 transition-transform"></span>
+            <span id="recordBtnText">Start Recording</span>
+          </button>
+
+          <button id="stopBtn" disabled class="px-5 py-3 bg-slate-800 text-slate-500 font-semibold text-sm rounded-2xl border border-slate-700 transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+            <i class="fa-solid fa-square text-xs"></i>
+            <span>Stop Recording</span>
+          </button>
+
+          <button id="playbackBtn" disabled class="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm rounded-2xl border border-slate-700 transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+            <i id="playbackIcon" class="fa-solid fa-play text-xs text-indigo-400"></i>
+            <span id="playbackBtnText">Listen to Recording</span>
+          </button>
+
+        </div>
+
+        <!-- Recorded Student Audio Element -->
+        <audio id="studentAudioPlayer" class="hidden"></audio>
+
+        <!-- Live Transcript Preview -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+              <i class="fa-solid fa-quote-left text-indigo-400"></i> Speech Transcript
+            </label>
+            <span class="text-[11px] text-slate-500">Edit or type manually if needed</span>
+          </div>
+          <textarea id="studentTranscript" rows="3" placeholder="Your transcript will automatically appear here as you speak... You can also edit or type directly into this box." class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-slate-600 leading-relaxed"></textarea>
+        </div>
+
+        <!-- Analyze Button -->
+        <div class="pt-2">
+          <button id="analyzeBtn" disabled class="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-extrabold text-base rounded-2xl shadow-xl shadow-indigo-600/30 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
+            <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
+            <span>Evaluate My Answer with AI</span>
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- SECTION 4: AI Feedback & Evaluation Modal/Section -->
+    <section id="feedbackSection" class="hidden space-y-6 max-w-4xl mx-auto w-full">
+      
+      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-8 border border-indigo-500/30 shadow-2xl relative overflow-hidden">
+        
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-6">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">AI Evaluation Report</span>
+              <span id="feedbackCharBadge" class="text-xs text-slate-400">Reviewed by Buddy</span>
+            </div>
+            <h2 class="text-2xl font-extrabold text-white">Performance Feedback</h2>
+          </div>
+          
+          <button id="tryAgainBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-colors flex items-center gap-2">
+            <i class="fa-solid fa-arrow-rotate-left"></i> Practice Next Question
+          </button>
+        </div>
+
+        <!-- Score Breakdown Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 text-center space-y-1">
+            <p class="text-xs font-semibold text-slate-400">Overall Score</p>
+            <p id="scoreOverall" class="text-3xl font-extrabold text-indigo-400">--</p>
+            <p id="scoreGradeTag" class="text-[11px] text-indigo-300 font-medium">B1 Level</p>
+          </div>
+
+          <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 text-center space-y-1">
+            <p class="text-xs font-semibold text-slate-400">Vocabulary</p>
+            <p id="scoreVocab" class="text-2xl font-bold text-purple-400">--</p>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2">
+              <div id="barVocab" class="bg-purple-400 h-full w-0 transition-all duration-1000"></div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 text-center space-y-1">
+            <p class="text-xs font-semibold text-slate-400">Communicative Competence</p>
+            <p id="scoreComm" class="text-2xl font-bold text-emerald-400">--</p>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2">
+              <div id="barComm" class="bg-emerald-400 h-full w-0 transition-all duration-1000"></div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 text-center space-y-1">
+            <p class="text-xs font-semibold text-slate-400">Grammar</p>
+            <p id="scoreGrammar" class="text-2xl font-bold text-amber-400">--</p>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2">
+              <div id="barGrammar" class="bg-amber-400 h-full w-0 transition-all duration-1000"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed Feedback Sections -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- Strengths -->
+          <div class="bg-emerald-950/20 border border-emerald-500/20 rounded-2xl p-5 space-y-3">
+            <h3 class="font-bold text-emerald-400 text-sm flex items-center gap-2">
+              <i class="fa-solid fa-circle-check"></i> What You Did Well
+            </h3>
+            <ul id="strengthsList" class="space-y-2 text-xs text-slate-300 leading-relaxed">
+              <!-- Inserted via JS -->
+            </ul>
+          </div>
+
+          <!-- Areas for Improvement -->
+          <div class="bg-amber-950/20 border border-amber-500/20 rounded-2xl p-5 space-y-3">
+            <h3 class="font-bold text-amber-400 text-sm flex items-center gap-2">
+              <i class="fa-solid fa-lightbulb"></i> Tips for Next Time
+            </h3>
+            <ul id="improvementsList" class="space-y-2 text-xs text-slate-300 leading-relaxed">
+              <!-- Inserted via JS -->
+            </ul>
+          </div>
+
+        </div>
+
+        <!-- Model Sample Response -->
+        <div class="bg-indigo-950/30 border border-indigo-500/30 rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-indigo-300 text-sm flex items-center gap-2">
+              <i class="fa-solid fa-star text-amber-400"></i> High-Scoring Sample Rephrase
+            </h3>
+            <button id="playSampleVoiceBtn" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+              <i class="fa-solid fa-volume-high"></i> Listen to Sample
+            </button>
+          </div>
+          <p id="sampleResponseText" class="text-sm text-slate-200 italic leading-relaxed bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+            <!-- Inserted via JS -->
+          </p>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Notification Toast Container -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-800 border border-slate-700 text-white text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+    <i id="toastIcon" class="fa-solid fa-info-circle text-indigo-400 text-lg"></i>
+    <span id="toastMessage">Notification message</span>
+  </div>
+
+  <script>
+
+    // Character Definitions with Personas & Gemini TTS Voices
+    const CHARACTERS = {
+      leo: {
+        id: 'leo',
+        name: 'Leo',
+        title: 'Tech & Future Enthusiast',
+        voice: 'Puck', // Energetic, youthful voice
+        bg: 'bg-cyan-500/20',
+        border: 'border-cyan-500/40',
+        text: 'text-cyan-400',
+        icon: '<i class="fa-solid fa-laptop-code text-cyan-400"></i>',
+        systemPrompt: "You are Leo, a friendly, tech-savvy teenager. You love gadgets, artificial intelligence, science, video games, and futuristic tech. You speak in a friendly, enthusiastic tone appropriate for teens learning English."
+      },
+      maya: {
+        id: 'maya',
+        name: 'Maya',
+        title: 'Culture & Social Explorer',
+        voice: 'Callirrhoe', // Warm, expressive voice
+        bg: 'bg-rose-500/20',
+        border: 'border-rose-500/40',
+        text: 'text-rose-400',
+        icon: '<i class="fa-solid fa-earth-americas text-rose-400"></i>',
+        systemPrompt: "You are Maya, a creative teenager who loves exploring cultures, travel, festivals, traditions, music, and how people live around the world. You speak in a warm, friendly, approachable tone."
+      },
+      zoe: {
+        id: 'zoe',
+        name: 'Zoe',
+        title: 'Eco & Health Champion',
+        voice: 'Aoede', // Upbeat, clear voice
+        bg: 'bg-emerald-500/20',
+        border: 'border-emerald-500/40',
+        text: 'text-emerald-400',
+        icon: '<i class="fa-solid fa-leaf text-emerald-400"></i>',
+        systemPrompt: "You are Zoe, an energetic teen who is passionate about healthy living, eco-friendly habits, sports, nature, and saving the planet. You encourage students with positivity and practical ideas."
+      },
+      sam: {
+        id: 'sam',
+        name: 'Sam',
+        title: 'Smart Money Guru',
+        voice: 'Fenrir', // Friendly, relatable voice
+        bg: 'bg-amber-500/20',
+        border: 'border-amber-500/40',
+        text: 'text-amber-400',
+        icon: '<i class="fa-solid fa-wallet text-amber-400"></i>',
+        systemPrompt: "You are Sam, a practical, smart teenager who loves sharing money hacks, budgeting tips, smart shopping advice, allowance planning, and avoiding wasteful spending."
+      },
+      kai: {
+        id: 'kai',
+        name: 'Kai',
+        title: 'Creative Life Coach',
+        voice: 'Sadaltager', // Inspiring, thoughtful voice
+        bg: 'bg-purple-500/20',
+        border: 'border-purple-500/40',
+        text: 'text-purple-400',
+        icon: '<i class="fa-solid fa-bolt text-purple-400"></i>',
+        systemPrompt: "You are Kai, a fun, upbeat teen motivator who asks cool hypothetical questions, sparks big ideas, and encourages personal growth and creative thinking."
+      }
+    };
+
+    // State Management
+    let currentCharacter = null;
+    let currentQuestion = "";
+    let isQuestionHidden = false;
+    
+    // Audio & Recording State
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioBlob = null;
+    let audioUrl = null;
+    let isRecording = false;
+    let recordTimerInterval = null;
+    let recordSeconds = 0;
+
+    // Web Speech Recognition
+    let recognition = null;
+    let isSpeechRecognitionActive = false;
+
+    // Web Audio Visualizer
+    let audioContext = null;
+    let analyser = null;
+    let microphoneStream = null;
+    let animationFrameId = null;
+
+    // DOM Elements
+    const selectionSection = document.getElementById('selectionSection');
+    const promptPracticeSection = document.getElementById('promptPracticeSection');
+    const feedbackSection = document.getElementById('feedbackSection');
+
+    const levelSelect = document.getElementById('levelSelect');
+    const topicSelect = document.getElementById('topicSelect');
+
+    const activeAvatarBox = document.getElementById('activeAvatarBox');
+    const activeCharName = document.getElementById('activeCharName');
+    const activeCharRole = document.getElementById('activeCharRole');
+    const activeLevelBadge = document.getElementById('activeLevelBadge');
+    const activeTopicBadge = document.getElementById('activeTopicBadge');
+    
+    const questionText = document.getElementById('questionText');
+    const questionHiddenPlaceholder = document.getElementById('questionHiddenPlaceholder');
+    const questionLoadingSpinner = document.getElementById('questionLoadingSpinner');
+
+    const playCharVoiceBtn = document.getElementById('playCharVoiceBtn');
+    const toggleTextBtn = document.getElementById('toggleTextBtn');
+    const toggleTextLabel = document.getElementById('toggleTextLabel');
+    const toggleTextIcon = document.getElementById('toggleTextIcon');
+    const newQuestionBtn = document.getElementById('newQuestionBtn');
+    const changeBuddyBtn = document.getElementById('changeBuddyBtn');
+
+    const recordBtn = document.getElementById('recordBtn');
+    const recordBtnText = document.getElementById('recordBtnText');
+    const stopBtn = document.getElementById('stopBtn');
+    const playbackBtn = document.getElementById('playbackBtn');
+    const playbackBtnText = document.getElementById('playbackBtnText');
+    const playbackIcon = document.getElementById('playbackIcon');
+    const studentAudioPlayer = document.getElementById('studentAudioPlayer');
+    const studentTranscript = document.getElementById('studentTranscript');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const recordTimer = document.getElementById('recordTimer');
+    const visualizerCanvas = document.getElementById('visualizerCanvas');
+    const visualizerPlaceholder = document.getElementById('visualizerPlaceholder');
+    const characterSpeakingWave = document.getElementById('characterSpeakingWave');
+
+
+    // Toast Notification helper
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.innerText = message;
+      if (isError) {
+        toastIcon.className = 'fa-solid fa-circle-exclamation text-rose-400 text-lg';
+      } else {
+        toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3500);
+    }
+
+    // Convert PCM16 ArrayBuffer from Gemini TTS into WAV Blob
+    function pcmToWav(pcm16, sampleRate = 24000) {
+      const buffer = new ArrayBuffer(44 + pcm16.length * 2);
+      const view = new DataView(buffer);
+
+      function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+          view.setUint8(offset + i, string.charCodeAt(i));
+        }
+      }
+
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, 36 + pcm16.length * 2, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true); // PCM
+      view.setUint16(22, 1, true); // Mono
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, pcm16.length * 2, true);
+
+      let offset = 44;
+      for (let i = 0; i < pcm16.length; i++, offset += 2) {
+        view.setInt16(offset, pcm16[i], true);
+      }
+
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    function base64ToArrayBuffer(base64) {
+      const binaryString = window.atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes.buffer;
+    }
+
+    // Gemini API TTS Call (gemini-2.5-flash-preview-tts)
+    async function speakWithGeminiTTS(textToSpeak, voiceName = "Puck") {
+      characterSpeakingWave.classList.remove('hidden');
+      playCharVoiceBtn.disabled = true;
+
+      try {
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+        const payload = {
+          contents: [{
+            parts: [{ text: `Speak in a friendly, expressive voice: ${textToSpeak}` }]
+          }],
+          generationConfig: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: voiceName }
+              }
+            }
+          }
+        };
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        const part = result?.candidates?.[0]?.content?.parts?.[0];
+        const audioData = part?.inlineData?.data;
+        const mimeType = part?.inlineData?.mimeType;
+
+        if (audioData) {
+          let sampleRate = 24000;
+          if (mimeType && mimeType.includes("rate=")) {
+            const match = mimeType.match(/rate=(\d+)/);
+            if (match) sampleRate = parseInt(match[1], 10);
+          }
+
+          const arrayBuffer = base64ToArrayBuffer(audioData);
+          const pcm16 = new Int16Array(arrayBuffer);
+          const wavBlob = pcmToWav(pcm16, sampleRate);
+          const audioUrl = URL.createObjectURL(wavBlob);
+
+          const audio = new Audio(audioUrl);
+          audio.onended = () => {
+            characterSpeakingWave.classList.add('hidden');
+            playCharVoiceBtn.disabled = false;
+          };
+          audio.play();
+          showToast(`Playing spoken question from ${currentCharacter.name}...`);
+        } else {
+          fallbackBrowserTTS(textToSpeak);
+        }
+
+      } catch (err) {
+        console.warn("Gemini TTS API fallback to Browser SpeechSynthesis:", err);
+        fallbackBrowserTTS(textToSpeak);
+      }
+    }
+
+    // Browser SpeechSynthesis Fallback
+    function fallbackBrowserTTS(textToSpeak) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.rate = 0.95;
+        utterance.pitch = 1.0;
+        
+        utterance.onstart = () => {
+          characterSpeakingWave.classList.remove('hidden');
+          playCharVoiceBtn.disabled = true;
+        };
+        utterance.onend = () => {
+          characterSpeakingWave.classList.add('hidden');
+          playCharVoiceBtn.disabled = false;
+        };
+        utterance.onerror = () => {
+          characterSpeakingWave.classList.add('hidden');
+          playCharVoiceBtn.disabled = false;
+        };
+
+        window.speechSynthesis.speak(utterance);
+        document.getElementById('ttsEngineLabel').innerText = 'Browser Speech Engine';
+      } else {
+        characterSpeakingWave.classList.add('hidden');
+        playCharVoiceBtn.disabled = false;
+        showToast("Audio playback not supported in this browser.", true);
+      }
+    }
+
+
+    // Generate Question using Gemini API
+    async function generateCharacterQuestion() {
+      if (!currentCharacter) return;
+
+      questionText.classList.add('hidden');
+      questionLoadingSpinner.classList.remove('hidden');
+      newQuestionBtn.disabled = true;
+
+      const level = levelSelect.value;
+      const topic = topicSelect.value;
+
+      const prompt = `You are playing the character ${currentCharacter.name} (${currentCharacter.title}).
+Topic Category: ${topic}
+Student English Target Level: ${level} (A1: simple short sentences, basic vocab; A2: simple reasons, everyday ideas; B1: opinion with simple details; B2: clear structured opinions with good range of vocab).
+
+Ask EXACTLY 1 clear, teen-friendly speaking question that matches the student's level (${level}) and category (${topic}).
+The question should encourage the teen to speak for 30 to 60 seconds.
+Do NOT include any greetings, introductory text, quotes, or markdown tags. Respond ONLY with the question text itself.`;
+
+      try {
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+        const payload = {
+          contents: [{ parts: [{ text: prompt }] }],
+          systemInstruction: { parts: [{ text: currentCharacter.systemPrompt }] }
+        };
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (generatedText) {
+          currentQuestion = generatedText.trim().replace(/^["']|["']$/g, '');
+        } else {
+          currentQuestion = getDefaultFallbackQuestion(topic, level);
+        }
+      } catch (err) {
+        console.error("Error generating question with Gemini API:", err);
+        currentQuestion = getDefaultFallbackQuestion(topic, level);
+      } finally {
+        questionLoadingSpinner.classList.add('hidden');
+        if (!isQuestionHidden) {
+          questionText.innerText = currentQuestion;
+          questionText.classList.remove('hidden');
+        }
+        newQuestionBtn.disabled = false;
+
+        // Automatically speak the generated question
+        speakWithGeminiTTS(currentQuestion, currentCharacter.voice);
+      }
+    }
+
+    function getDefaultFallbackQuestion(topic, level) {
+      const fallbacks = {
+        "People and Culture": {
+          "A1 Beginner": "What is your favorite festival or celebration? Who do you spend it with?",
+          "A2 Elementary": "Tell me about a special family tradition you enjoy. Why do you like it?",
+          "B1 Intermediate": "How do young people in your country celebrate holidays compared to older generations?",
+          "B2 Upper-Intermediate": "In what ways can learning about different cultures help reduce misunderstandings between people?"
+        },
+        "Health and Environment": {
+          "A1 Beginner": "What healthy food do you like to eat every day?",
+          "A2 Elementary": "What sports or outdoor activities do you do to stay active?",
+          "B1 Intermediate": "What simple habits can teenagers adopt to protect the environment in their daily lives?",
+          "B2 Upper-Intermediate": "How can schools encourage students to maintain both physical fitness and good mental health?"
+        },
+        "Science and Technology": {
+          "A1 Beginner": "What app or device do you use most often on your phone?",
+          "A2 Elementary": "How does technology help you with your school homework or hobbies?",
+          "B1 Intermediate": "Do you think artificial intelligence will make studying easier or harder for students in the future?",
+          "B2 Upper-Intermediate": "What are the advantages and drawbacks of teenagers relying heavily on social media for news?"
+        },
+        "Consumerism and Financial Awareness": {
+          "A1 Beginner": "What is something you recently saved money to buy?",
+          "A2 Elementary": "How do you usually decide what to buy when you go shopping?",
+          "B1 Intermediate": "Why is it important for teenagers to learn how to manage pocket money or savings early?",
+          "B2 Upper-Intermediate": "How do advertisements influence young consumers, and how can teens make smarter buying choices?"
+        }
+      };
+
+      if (fallbacks[topic] && fallbacks[topic][level]) {
+        return fallbacks[topic][level];
+      }
+      return "What is your favorite hobby, and why do you enjoy doing it?";
+    }
+
+
+    // Web Speech Recognition Initialization
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.warn("Web Speech Recognition API not supported in this browser.");
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript.trim()) {
+          studentTranscript.value = transcript;
+          analyzeBtn.disabled = false;
+        }
+      };
+
+      recognition.onerror = (event) => {
+        isSpeechRecognitionActive = false;
+        if (event.error === 'audio-capture') {
+          showToast("Live transcription mic conflict detected. Audio recording is still active — feel free to type or edit text manually!", true);
+        } else if (event.error === 'not-allowed') {
+          showToast("Microphone permission was denied. Please check your browser settings.", true);
+        } else if (event.error !== 'no-speech') {
+          console.warn("Speech recognition notice:", event.error);
+        }
+      };
+
+      recognition.onend = () => {
+        isSpeechRecognitionActive = false;
+      };
+    }
+
+    // Canvas Visualizer
+    function setupAudioVisualizer(stream) {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 64;
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+
+      const canvasCtx = visualizerCanvas.getContext('2d');
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      function draw() {
+        animationFrameId = requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
+
+        canvasCtx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+        canvasCtx.fillRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+
+        const barWidth = (visualizerCanvas.width / bufferLength) * 2.5;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = (dataArray[i] / 255) * visualizerCanvas.height;
+
+          const gradient = canvasCtx.createLinearGradient(0, visualizerCanvas.height, 0, 0);
+          gradient.addColorStop(0, '#6366f1');
+          gradient.addColorStop(1, '#a855f7');
+
+          canvasCtx.fillStyle = gradient;
+          canvasCtx.fillRect(x, visualizerCanvas.height - barHeight, barWidth - 2, barHeight);
+
+          x += barWidth;
+        }
+      }
+
+      visualizerPlaceholder.classList.add('hidden');
+      draw();
+    }
+
+    function stopAudioVisualizer() {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      const canvasCtx = visualizerCanvas.getContext('2d');
+      canvasCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+      visualizerPlaceholder.classList.remove('hidden');
+    }
+
+    // Recording Logic
+    async function startRecording() {
+      audioChunks = [];
+      try {
+        microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(microphoneStream);
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          audioUrl = URL.createObjectURL(audioBlob);
+          studentAudioPlayer.src = audioUrl;
+          playbackBtn.disabled = false;
+        };
+
+        mediaRecorder.start();
+        setupAudioVisualizer(microphoneStream);
+
+        if (recognition && !isSpeechRecognitionActive) {
+          try {
+            recognition.start();
+            isSpeechRecognitionActive = true;
+          } catch (e) {
+            console.warn("Speech recognition skipped due to device sharing:", e);
+            isSpeechRecognitionActive = false;
+          }
+        }
+
+        isRecording = true;
+        recordBtn.classList.remove('bg-red-600', 'hover:bg-red-500');
+        recordBtn.classList.add('bg-amber-600', 'hover:bg-amber-500', 'animate-pulse');
+        recordBtnText.innerText = "Recording...";
+        stopBtn.disabled = false;
+        playbackBtn.disabled = true;
+
+        recordSeconds = 0;
+        updateTimerDisplay();
+        recordTimerInterval = setInterval(() => {
+          recordSeconds++;
+          updateTimerDisplay();
+          if (recordSeconds >= 120) {
+            stopRecording();
+          }
+        }, 1000);
+
+        showToast("Recording started! Speak into your microphone.");
+
+      } catch (err) {
+        console.error("Microphone access denied or error:", err);
+        showToast("Microphone error. Please check mic permissions or type manually.", true);
+      }
+    }
+
+    function stopRecording() {
+      if (!isRecording) return;
+
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
+      if (microphoneStream) {
+        microphoneStream.getTracks().forEach(track => track.stop());
+      }
+
+      stopAudioVisualizer();
+
+      if (recognition && isSpeechRecognitionActive) {
+        try {
+          recognition.stop();
+        } catch (e) {}
+        isSpeechRecognitionActive = false;
+      }
+
+      clearInterval(recordTimerInterval);
+      isRecording = false;
+
+      recordBtn.classList.remove('bg-amber-600', 'hover:bg-amber-500', 'animate-pulse');
+      recordBtn.classList.add('bg-red-600', 'hover:bg-red-500');
+      recordBtnText.innerText = "Re-record Answer";
+      stopBtn.disabled = true;
+
+      if (studentTranscript.value.trim().length > 0) {
+        analyzeBtn.disabled = false;
+      }
+
+      showToast("Recording saved! Listen back or click Evaluate.");
+    }
+
+    function updateTimerDisplay() {
+      const mins = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+      const secs = String(recordSeconds % 60).padStart(2, '0');
+      recordTimer.innerText = `${mins}:${secs}`;
+    }
+
+
+    // Evaluate Spoken Answer via Gemini Structured JSON Output API
+    async function evaluateStudentAnswer() {
+      const transcript = studentTranscript.value.trim();
+      if (!transcript) {
+        showToast("Please speak or enter an answer first!", true);
+        return;
+      }
+
+      analyzeBtn.disabled = true;
+      analyzeBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xl"></i> <span>Evaluating Vocabulary, Communicative Competence & Grammar...</span>`;
+
+      const level = levelSelect.value;
+      const topic = topicSelect.value;
+
+      const prompt = `You are a supportive ESL Speech Coach for teenagers evaluating a student's answer.
+
+Question Asked by ${currentCharacter.name}: "${currentQuestion}"
+Topic Category: ${topic}
+Target CEFR Level: ${level}
+Student Spoken Answer Transcript: "${transcript}"
+
+Evaluate the answer appropriately for a teenager aiming for CEFR level ${level}. Focus your evaluation on the three core categories: Vocabulary, Communicative Competence, and Grammar.
+
+Return a JSON object with this EXACT structure:
+{
+  "overallScore": number (0 to 100),
+  "cefrGrade": string (e.g. "A1 Beginner", "A2 Elementary", "B1 Intermediate", "B2 Upper-Intermediate"),
+  "vocabScore": number (0 to 100),
+  "communicativeScore": number (0 to 100),
+  "grammarScore": number (0 to 100),
+  "strengths": Array of 2-3 encouraging bullet point strings praising positive points (specifically regarding vocabulary, communicative competence, or grammar),
+  "improvements": Array of 2-3 friendly, actionable advice bullet point strings,
+  "sampleResponse": string (A clear, high-scoring natural rephrase suited for target level ${level})
+}`;
+
+      try {
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+        const payload = {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: "application/json"
+          }
+        };
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (jsonText) {
+          const evalData = JSON.parse(jsonText);
+          displayFeedback(evalData);
+        } else {
+          showToast("Failed to process feedback JSON response.", true);
+        }
+
+      } catch (err) {
+        console.error("Evaluation error:", err);
+        showToast("Error connecting to AI evaluation engine.", true);
+      } finally {
+        analyzeBtn.disabled = false;
+        analyzeBtn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-xl"></i> <span>Evaluate My Answer with AI</span>`;
+      }
+    }
+
+    // Render AI Feedback UI
+    function displayFeedback(data) {
+      document.getElementById('feedbackCharBadge').innerText = `Reviewed by ${currentCharacter.name}`;
+      
+      document.getElementById('scoreOverall').innerText = `${data.overallScore || 80}/100`;
+      document.getElementById('scoreGradeTag').innerText = data.cefrGrade || levelSelect.value;
+
+      document.getElementById('scoreVocab').innerText = `${data.vocabScore || 80}%`;
+      document.getElementById('barVocab').style.width = `${data.vocabScore || 80}%`;
+
+      document.getElementById('scoreComm').innerText = `${data.communicativeScore || 75}%`;
+      document.getElementById('barComm').style.width = `${data.communicativeScore || 75}%`;
+
+      document.getElementById('scoreGrammar').innerText = `${data.grammarScore || 75}%`;
+      document.getElementById('barGrammar').style.width = `${data.grammarScore || 75}%`;
+
+      // Strengths List
+      const strengthsList = document.getElementById('strengthsList');
+      strengthsList.innerHTML = '';
+      (data.strengths || ['Great job answering the question directly!', 'Clear expression of main ideas.']).forEach(str => {
+        strengthsList.innerHTML += `
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-check text-emerald-400 mt-0.5 shrink-0"></i>
+            <span>${str}</span>
+          </li>`;
+      });
+
+      // Improvements List
+      const improvementsList = document.getElementById('improvementsList');
+      improvementsList.innerHTML = '';
+      (data.improvements || ['Try linking sentences with words like "because" or "also".', 'Add an extra example to elaborate on your point.']).forEach(imp => {
+        improvementsList.innerHTML += `
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-angle-right text-amber-400 mt-0.5 shrink-0"></i>
+            <span>${imp}</span>
+          </li>`;
+      });
+
+      // Sample Response
+      const sampleText = data.sampleResponse || "Here is a clean rephrase of your response.";
+      document.getElementById('sampleResponseText').innerText = `"${sampleText}"`;
+
+      document.getElementById('playSampleVoiceBtn').onclick = () => {
+        speakWithGeminiTTS(sampleText, currentCharacter.voice);
+      };
+
+      feedbackSection.classList.remove('hidden');
+      feedbackSection.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Event Listeners & UI Handlers
+    document.addEventListener('DOMContentLoaded', () => {
+      initSpeechRecognition();
+
+      document.querySelectorAll('.char-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const charKey = card.dataset.char;
+          selectCharacter(charKey);
+        });
+      });
+
+      function selectCharacter(charKey) {
+        currentCharacter = CHARACTERS[charKey];
+        if (!currentCharacter) return;
+
+        document.querySelectorAll('.char-card').forEach(c => c.classList.remove('border-indigo-500'));
+        
+        activeAvatarBox.className = `w-24 h-24 sm:w-28 sm:h-28 rounded-2xl flex items-center justify-center text-4xl sm:text-5xl shadow-xl transition-all animate-float ${currentCharacter.bg} border ${currentCharacter.border}`;
+        activeAvatarBox.innerHTML = currentCharacter.icon;
+        activeCharName.innerText = currentCharacter.name;
+        activeCharRole.innerText = currentCharacter.title;
+        activeLevelBadge.innerText = levelSelect.value;
+        activeTopicBadge.innerText = topicSelect.selectedOptions[0].text;
+
+        selectionSection.classList.add('hidden');
+        promptPracticeSection.classList.remove('hidden');
+        feedbackSection.classList.add('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        generateCharacterQuestion();
+      }
+
+      changeBuddyBtn.addEventListener('click', () => {
+        promptPracticeSection.classList.add('hidden');
+        feedbackSection.classList.add('hidden');
+        selectionSection.classList.remove('hidden');
+      });
+
+      newQuestionBtn.addEventListener('click', () => {
+        generateCharacterQuestion();
+      });
+
+      playCharVoiceBtn.addEventListener('click', () => {
+        if (currentQuestion) {
+          speakWithGeminiTTS(currentQuestion, currentCharacter.voice);
+        }
+      });
+
+      toggleTextBtn.addEventListener('click', () => {
+        isQuestionHidden = !isQuestionHidden;
+        if (isQuestionHidden) {
+          questionText.classList.add('hidden');
+          questionHiddenPlaceholder.classList.remove('hidden');
+          toggleTextLabel.innerText = "Show Text";
+          toggleTextIcon.className = "fa-solid fa-eye-slash";
+        } else {
+          questionText.innerText = currentQuestion;
+          questionText.classList.remove('hidden');
+          questionHiddenPlaceholder.classList.add('hidden');
+          toggleTextLabel.innerText = "Hide Text";
+          toggleTextIcon.className = "fa-solid fa-eye";
+        }
+      });
+
+      recordBtn.addEventListener('click', () => {
+        if (!isRecording) {
+          startRecording();
+        } else {
+          stopRecording();
+        }
+      });
+
+      stopBtn.addEventListener('click', () => {
+        stopRecording();
+      });
+
+      playbackBtn.addEventListener('click', () => {
+        if (studentAudioPlayer.src) {
+          if (studentAudioPlayer.paused) {
+            studentAudioPlayer.play();
+            playbackBtnText.innerText = "Pause Playback";
+            playbackIcon.className = "fa-solid fa-pause text-xs text-indigo-400";
+          } else {
+            studentAudioPlayer.pause();
+            playbackBtnText.innerText = "Listen to Recording";
+            playbackIcon.className = "fa-solid fa-play text-xs text-indigo-400";
+          }
+        }
+      });
+
+      studentAudioPlayer.onended = () => {
+        playbackBtnText.innerText = "Listen to Recording";
+        playbackIcon.className = "fa-solid fa-play text-xs text-indigo-400";
+      };
+
+      studentTranscript.addEventListener('input', () => {
+        if (studentTranscript.value.trim().length > 0) {
+          analyzeBtn.disabled = false;
+        } else {
+          analyzeBtn.disabled = true;
+        }
+      });
+
+      analyzeBtn.addEventListener('click', evaluateStudentAnswer);
+
+      document.getElementById('tryAgainBtn').addEventListener('click', () => {
+        studentTranscript.value = "";
+        studentAudioPlayer.src = "";
+        playbackBtn.disabled = true;
+        analyzeBtn.disabled = true;
+        recordSeconds = 0;
+        updateTimerDisplay();
+        feedbackSection.classList.add('hidden');
+        generateCharacterQuestion();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      document.getElementById('resetSessionBtn').addEventListener('click', () => {
+        if (isRecording) stopRecording();
+        studentTranscript.value = "";
+        studentAudioPlayer.src = "";
+        playbackBtn.disabled = true;
+        analyzeBtn.disabled = true;
+        feedbackSection.classList.add('hidden');
+        promptPracticeSection.classList.add('hidden');
+        selectionSection.classList.remove('hidden');
+      });
+
+      const canvas = document.getElementById('visualizerCanvas');
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+      window.addEventListener('resize', () => {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+      });
+    });
+  </script>
+</body>
+</html>
